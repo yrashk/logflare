@@ -4,6 +4,7 @@ defmodule Logflare.Source.BigQuery.Buffer do
   alias Logflare.LogEvent, as: LE
   alias Logflare.Source.RecentLogsServer, as: RLS
   alias Logflare.Source
+  alias Logflare.Sources
   alias Logflare.Tracker
 
   require Logger
@@ -24,6 +25,8 @@ defmodule Logflare.Source.BigQuery.Buffer do
 
   def init(state) do
     Process.flag(:trap_exit, true)
+
+    Sources.Buffers.put_buffer_state(state.source_id, state)
 
     {:ok, state, {:continue, :boot}}
   end
@@ -50,41 +53,57 @@ defmodule Logflare.Source.BigQuery.Buffer do
     GenServer.call(name(source_id), :get_count)
   end
 
+  def dirty_len(source_id) do
+    Sources.Buffers.dirty_len(source_id)
+  end
+
   def handle_cast({:push, %LE{} = event}, state) do
-    new_buffer = :queue.in(event, state.buffer)
-    new_state = %{state | buffer: new_buffer}
-    {:noreply, new_state}
+    {:ok, ets_state} = Sources.Buffers.get_buffer_state(state.source_id)
+    new_buffer = :queue.in(event, ets_state.buffer)
+    ets_new_state = %{ets_state | buffer: new_buffer}
+    Sources.Buffers.put_buffer_state(state.source_id, ets_new_state)
+    {:noreply, state}
   end
 
   def handle_call(:pop, _from, state) do
-    case :queue.is_empty(state.buffer) do
+    {:ok, ets_state} = Sources.Buffers.get_buffer_state(state.source_id)
+
+    case :queue.is_empty(ets_state.buffer) do
       true ->
         {:reply, :empty, state}
 
       false ->
-        {{:value, %LE{} = log_event}, new_buffer} = :queue.out(state.buffer)
-        new_read_receipts = Map.put(state.read_receipts, log_event.id, log_event)
+        {{:value, %LE{} = log_event}, new_buffer} = :queue.out(ets_state.buffer)
+        new_read_receipts = Map.put(ets_state.read_receipts, log_event.id, log_event)
 
-        new_state = %{state | buffer: new_buffer, read_receipts: new_read_receipts}
-        {:reply, log_event, new_state}
+        ets_new_state = %{ets_state | buffer: new_buffer, read_receipts: new_read_receipts}
+
+        Sources.Buffers.put_buffer_state(state.source_id, ets_new_state)
+
+        {:reply, log_event, state}
     end
   end
 
   def handle_call({:ack, log_event_id}, _from, state) do
-    case state.read_receipts == %{} do
+    {:ok, ets_state} = Sources.Buffers.get_buffer_state(state.source_id)
+
+    case ets_state.read_receipts == %{} do
       true ->
         {:reply, :empty, state}
 
       false ->
-        {%LE{} = log_event, new_read_receipts} = Map.pop(state.read_receipts, log_event_id)
-        new_state = %{state | read_receipts: new_read_receipts}
+        {%LE{} = log_event, new_read_receipts} = Map.pop(ets_state.read_receipts, log_event_id)
+        ets_new_state = %{ets_state | read_receipts: new_read_receipts}
 
-        {:reply, log_event, new_state}
+        Sources.Buffers.put_buffer_state(state.source_id, ets_new_state)
+
+        {:reply, log_event, state}
     end
   end
 
   def handle_call(:get_count, _from, state) do
-    count = :queue.len(state.buffer)
+    {:ok, ets_state} = Sources.Buffers.get_buffer_state(state.source_id)
+    count = :queue.len(ets_state.buffer)
     {:reply, count, state}
   end
 
