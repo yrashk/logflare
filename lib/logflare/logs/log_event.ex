@@ -125,7 +125,8 @@ defmodule Logflare.LogEvent do
 
     Logflare.LogEvent
     |> struct!(le_map)
-    |> validate()
+
+    # |> validate()
   end
 
   def make_body(_struct, params) do

@@ -33,13 +33,17 @@ config :logflare, LogflareWeb.Endpoint,
     ]
   ]
 
-config :logger,
-  level: :debug,
-  backends: [:console, LogflareLogger.HttpBackend]
+# config :logger,
+#   level: :debug,
+#   backends: [:console, LogflareLogger.HttpBackend]
 
-config :logger, :console,
-  format: "\n[$level] [$metadata] $message\n",
-  metadata: [:request_id]
+config :logger,
+  backends: [:console],
+  compile_time_purge_matching: [
+    [level_lower_than: :debug]
+  ]
+
+config :logger, :console, format: "[$level] $message\n"
 
 config :phoenix, :stacktrace_depth, 20
 
