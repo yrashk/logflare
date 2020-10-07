@@ -1,0 +1,20 @@
+
+<%= form_for @changeset, @action, fn f -> %>
+<div class="form-group">
+  <%= label f, :title, class: "label-padding" %>
+  <%= text_input f, :title, class: "form-control form-control-margin"  %>
+  <%= error_tag f, :title %>
+
+  <%= label f, :version, class: "label-padding" %>
+  <%= text_input f, :version, class: "form-control form-control-margin"  %>
+  <%= error_tag f, :version %>
+
+  <%= label f, :body, class: "label-padding" %>
+  <%= textarea f, :body, class: "form-control form-control-margin"  %>
+  <%= error_tag f, :body %>
+</div>
+
+<div>
+  <%= submit "Save", class: "btn btn-primary" %>
+</div>
+<% end %>

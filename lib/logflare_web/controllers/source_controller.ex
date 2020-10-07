@@ -318,6 +318,13 @@ defmodule LogflareWeb.SourceController do
         |> put_flash(:error, message)
         |> redirect(to: Routes.source_path(conn, :edit, source.id))
 
+      {:error, :select_frequency} ->
+        message = "Please select an alert frequency."
+
+        conn
+        |> put_flash(:error, message)
+        |> redirect(to: Routes.source_path(conn, :edit, source.id))
+
       {:error, changeset} ->
         conn
         |> put_status(406)

@@ -102,6 +102,21 @@ defmodule LogflareWeb.Router do
     post "/cloudflare", Auth.OauthProviderController, :cloudflare_grant
   end
 
+  scope "/changes", LogflareWeb do
+    pipe_through [:browser]
+    get "/", ChangeLogController, :index
+    get "/:id", ChangeLogController, :show
+  end
+
+  scope "/admin/changes", LogflareWeb do
+    pipe_through [:browser, :check_admin]
+    get "/new", ChangeLogController, :new
+    post "/", ChangeLogController, :create
+    get "/:id/edit", ChangeLogController, :edit
+    delete "/:id", ChangeLogController, :delete
+    put "/:id", ChangeLogController, :update
+  end
+
   scope "/", LogflareWeb do
     pipe_through :browser
     get "/", MarketingController, :index

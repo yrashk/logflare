@@ -1,0 +1,14 @@
+<div class="subhead subhead-fixed">
+  <div class="container mx-auto">
+    <h5>
+      ~/admin/<%= link "changes", to: Routes.change_log_path(@conn, :index), class: "text-primary" %>/<%= @plan.id %>/edit
+    </h5>
+    <div class="log-settings">
+      <%= render LogflareWeb.AdminSharedView, "nav_links.html", conn: @conn %>
+    </div>
+  </div>
+</div>
+<div class="container mx-auto">
+  <h1>Edit Change Log</h1>
+  <%= render "form.html", Map.put(assigns, :action, Routes.change_log_path(@conn, :update, @change_log)) %>
+</div>
